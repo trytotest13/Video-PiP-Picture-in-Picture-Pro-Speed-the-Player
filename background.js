@@ -1,20 +1,23 @@
-// Video PiP Pro — service worker
+// Video PiP Pro — background script
 // Fills default settings on install and forwards keyboard shortcuts to the content script.
 
+const ext = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
 const DEFAULTS = { overlayEnabled: true, rememberSpeed: true, defaultSpeed: 1 };
 
-chrome.runtime.onInstalled.addListener(async () => {
-  const current = await chrome.storage.sync.get(DEFAULTS);
-  await chrome.storage.sync.set(current);
+ext.runtime.onInstalled.addListener(async () => {
+  try {
+    const current = await ext.storage.sync.get(DEFAULTS);
+    await ext.storage.sync.set(current);
+  } catch (e) { /* ignore */ }
 });
 
-chrome.commands.onCommand.addListener(async (command) => {
+ext.commands.onCommand.addListener(async (command) => {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await ext.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.id != null) {
-      await chrome.tabs.sendMessage(tab.id, { type: 'vpp-command', command });
+      await ext.tabs.sendMessage(tab.id, { type: 'vpp-command', command });
     }
   } catch (e) {
-    // Page without the content script (chrome:// pages, Web Store, etc.)
+    // Page without the content script (restricted internal pages, addon store, etc.)
   }
 });

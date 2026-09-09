@@ -15,6 +15,7 @@
 
   /* ---------------- constants & helpers ---------------- */
 
+  const ext = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
   const IS_TOP = (() => { try { return window.self === window.top; } catch (e) { return false; } })();
   const Z_MAX = 2147483646;
   const SPEEDS = [1, 1.25, 1.5, 1.75, 2, 2.5, 3];
@@ -278,13 +279,13 @@
   let settings = { ...DEFAULTS };
   let globalRate = 1;
 
-  chrome.storage.sync.get(DEFAULTS).then((s) => {
+  ext.storage.sync.get(DEFAULTS).then((s) => {
     settings = { ...DEFAULTS, ...s };
     globalRate = settings.rememberSpeed ? (Number(settings.defaultSpeed) || 1) : 1;
     if (activeVideo) applyRemembered(activeVideo);
-  });
+  }).catch(() => {});
 
-  chrome.storage.onChanged.addListener((ch, area) => {
+  ext.storage.onChanged.addListener((ch, area) => {
     if (area !== 'sync') return;
     for (const k of Object.keys(DEFAULTS)) if (k in ch) settings[k] = ch[k].newValue;
     if (!settings.rememberSpeed) globalRate = 1;
@@ -391,14 +392,14 @@
   function saveCustomPos(pos) {
     customPos = pos || null;
     try {
-      if (!pos) chrome.storage.local.remove('vpp_custom_pos');
-      else chrome.storage.local.set({ vpp_custom_pos: pos });
+      if (!pos) ext.storage.local.remove('vpp_custom_pos');
+      else ext.storage.local.set({ vpp_custom_pos: pos });
     } catch (e) {}
   }
 
   function loadCustomPos() {
     try {
-      chrome.storage.local.get(['vpp_custom_pos']).then((res) => {
+      ext.storage.local.get(['vpp_custom_pos']).then((res) => {
         if (res && res.vpp_custom_pos && typeof res.vpp_custom_pos.x === 'number') {
           customPos = res.vpp_custom_pos;
           if (host && host.style.display !== 'none') positionPanel();
@@ -1211,7 +1212,7 @@
       activeImage = null;
       hidePanel();
       await video.requestPictureInPicture();
-      toast('Native PiP opened \u2014 custom player needs Chrome 116+');
+      toast('Picture-in-Picture opened');
     } catch (e) {
       toast('PiP is not available for this video');
     }
@@ -1720,18 +1721,29 @@
       doc.body.append(pic);
 
       const navBar = doc.createElement('div');
-      navBar.style.cssText = 'position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 16px;background:linear-gradient(0deg,rgba(0,0,0,0.85) 0%,transparent 100%);z-index:10;';
+      navBar.style.cssText = 'position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 16px;background:linear-gradient(0deg,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.65) 70%,transparent 100%);backdrop-filter:blur(8px);z-index:10;';
 
       const prevBtn = doc.createElement('button');
       prevBtn.innerHTML = '&#9664; Back';
-      prevBtn.style.cssText = 'background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600;font-size:12px;';
+      prevBtn.style.cssText = 'background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);color:#fff;border-radius:8px;padding:6px 14px;cursor:pointer;font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:6px;transition:background .15s;';
+      prevBtn.onmouseover = () => { prevBtn.style.background = 'rgba(255,255,255,0.3)'; };
+      prevBtn.onmouseout = () => { prevBtn.style.background = 'rgba(255,255,255,0.18)'; };
 
       const counter = doc.createElement('span');
-      counter.style.cssText = 'font-size:12px;font-weight:700;color:#fff;padding:4px 8px;background:rgba(255,255,255,0.15);border-radius:12px;';
+      counter.style.cssText = 'font-size:12px;font-weight:700;color:#fff;padding:5px 12px;background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.24);border-radius:99px;font-variant-numeric:tabular-nums;';
 
       const nextBtn = doc.createElement('button');
       nextBtn.innerHTML = 'Next &#9654;';
-      nextBtn.style.cssText = 'background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600;font-size:12px;';
+      nextBtn.style.cssText = 'background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);color:#fff;border-radius:8px;padding:6px 14px;cursor:pointer;font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:6px;transition:background .15s;';
+      nextBtn.onmouseover = () => { nextBtn.style.background = 'rgba(255,255,255,0.3)'; };
+      nextBtn.onmouseout = () => { nextBtn.style.background = 'rgba(255,255,255,0.18)'; };
+
+      const closeBtn = doc.createElement('button');
+      closeBtn.innerHTML = '&times; Close';
+      closeBtn.style.cssText = 'background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600;font-size:12px;margin-left:8px;transition:background .15s;';
+      closeBtn.onmouseover = () => { closeBtn.style.background = 'rgba(255,255,255,0.25)'; };
+      closeBtn.onmouseout = () => { closeBtn.style.background = 'rgba(255,255,255,0.1)'; };
+      closeBtn.addEventListener('click', () => popup.close());
 
       const updatePopup = () => {
         pic.src = images[currentIndex].src;
@@ -1796,12 +1808,12 @@
 
       prevBtn.addEventListener('click', goPrev);
       nextBtn.addEventListener('click', goNext);
-      navBar.append(prevBtn, counter, nextBtn);
+      navBar.append(prevBtn, counter, nextBtn, closeBtn);
       doc.body.append(navBar);
 
       doc.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') popup.close();
-        else if (e.key === 'ArrowRight') goNext();
+        else if (e.key === 'ArrowRight' || e.key === ' ' || e.code === 'Space') goNext();
         else if (e.key === 'ArrowLeft') goPrev();
       });
 
@@ -1986,7 +1998,7 @@
     } catch (e) { /* ignore */ }
   }, true);
 
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg && msg.type === 'vpp-command') {
       handleCommand(msg.command);
       if (sendResponse) sendResponse({ ok: true });
