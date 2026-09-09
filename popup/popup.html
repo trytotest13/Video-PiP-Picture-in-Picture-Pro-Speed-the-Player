@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon32.png" alt="">
+    <div>
+      <h1>Video PiP Pro</h1>
+      <p>Speed &bull; Seek &bull; PiP &bull; Scroll</p>
+    </div>
+  </header>
+  <main>
+    <label class="row">
+      <div><b>On-video controls</b><small>Speed, &plusmn;5s skip &amp; seek bar when you hover any video</small></div>
+      <span class="switch"><input type="checkbox" id="overlayEnabled"><i></i></span>
+    </label>
+    <label class="row">
+      <div><b>Remember speed</b><small>Keep your chosen speed across videos &amp; reels</small></div>
+      <span class="switch"><input type="checkbox" id="rememberSpeed"><i></i></span>
+    </label>
+    <div class="row">
+      <div><b>Default speed</b><small>Applied when a video starts</small></div>
+      <select id="defaultSpeed">
+        <option value="1">1&times;</option>
+        <option value="1.25">1.25&times;</option>
+        <option value="1.5">1.5&times;</option>
+        <option value="1.75">1.75&times;</option>
+        <option value="2">2&times;</option>
+        <option value="2.5">2.5&times;</option>
+        <option value="3">3&times;</option>
+      </select>
+    </div>
+    <div class="tips">
+      <b>Shortcuts</b>
+      <span><kbd>Alt</kbd>+<kbd>&darr;</kbd>/<kbd>&uarr;</kbd> scroll &nbsp;&middot;&nbsp; <kbd>Alt</kbd>+<kbd>S</kbd> speed &nbsp;&middot;&nbsp; <kbd>Alt</kbd>+<kbd>P</kbd> PiP</span>
+      <button id="openShortcuts">Change shortcuts</button>
+    </div>
+    <div class="tips">
+      <b>How to use</b>
+      <span>Hover a video for the control bar &middot; click the PiP button for a custom mini-player with the same 3&times; speed, &plusmn;5s and seek controls.</span>
+    </div>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>
